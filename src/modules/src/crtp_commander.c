@@ -50,19 +50,20 @@ void crtpCommanderInit(void) {
 
   crtpInit();
 
-  crtpRegisterPortCB(CRTP_PORT_SETPOSITION, commanderCrtpCB); // guojun: add set position port
   crtpRegisterPortCB(CRTP_PORT_SETPOINT, commanderCrtpCB);
   crtpRegisterPortCB(CRTP_PORT_SETPOINT_GENERIC, commanderCrtpCB);
-  crtpRegisterPortCB(CRTP_PORT_TEXT, commanderSetText);
 
+  crtpRegisterPortCB(CRTP_PORT_SETPOSITION, commanderCrtpCB); // guojun: add set position port
+  crtpRegisterPortCB(CRTP_PORT_TEXT, commanderSetText);
   crtpRegisterPortCB(CRTP_PORT_DEBUG, commanderCrtpDebug);
+
   isInit = true;
 }
 
 static void commanderCrtpCB(CRTPPacket* pk) {
   static setpoint_t setpoint;
 
-  if(pk->port == CRTP_PORT_SETPOINT && pk->channel == 0) {
+  if (pk->port == CRTP_PORT_SETPOINT && pk->channel == 0) {
     // guojun: the _cf.commander.send_setpoint(0, 0, 0, 0) will go through here
     // DEBUG_PRINT("Enter PORT_SETPOINT\n");
     crtpCommanderRpytDecodeSetpoint(&setpoint, pk);
