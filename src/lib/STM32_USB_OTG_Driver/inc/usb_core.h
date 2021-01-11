@@ -230,7 +230,7 @@ typedef struct _Device_cb
 #ifdef USB_SUPPORT_USER_STRING_DESC 
   uint8_t  *(*GetUsrStrDescriptor)( uint8_t speed ,uint8_t index,  uint16_t *length);   
 #endif  
-  
+
 } USBD_Class_cb_TypeDef;
 
 

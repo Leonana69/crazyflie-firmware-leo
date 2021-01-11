@@ -43,7 +43,7 @@ static const float thrustScale = 1000.0f;
 #define POSHOLD_LPF_ENABLE true
 
 /* CF2 */
-#define thrustBase  36000
+#define thrustBase  30000
 #define thrustMin   20000
 
 /* iFlight with 2S */

@@ -64,7 +64,7 @@
 #include "deck.h"
 #include "extrx.h"
 // guojun: add screen
-#include "cfal12864g.h"
+// #include "cfal12864g.h"
 
 /* Private variable */
 static bool selftestPassed;
@@ -85,9 +85,10 @@ void systemLaunch(void) {
 
 }
 
+
 // This must be the first module to be initialized!
 void systemInit(void) {
-  if(isInit)
+  if (isInit)
     return;
 
   canStartMutex = xSemaphoreCreateMutex();
@@ -191,7 +192,7 @@ void systemTask(void *arg) {
   pass &= watchdogNormalStartTest();
 
   //Start the firmware
-  if(pass) {
+  if (pass) {
     selftestPassed = 1;
     systemStart();
     soundSetEffect(SND_STARTUP);

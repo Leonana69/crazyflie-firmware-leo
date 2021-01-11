@@ -35,8 +35,7 @@
 #define USB_RX_TX_PACKET_SIZE   (64)
 
 /* Structure used for in/out data via USB */
-typedef struct
-{
+typedef struct {
   uint8_t size;
   uint8_t data[USB_RX_TX_PACKET_SIZE];
 } USBPacket;

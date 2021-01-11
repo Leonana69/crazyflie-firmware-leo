@@ -62,17 +62,17 @@
  * position hold mode Decoder
  * Set the Crazyflie absolute height and relative distance in the world coordinate system
  */
-struct posHoldPackets {
+struct positionPackets {
   float xDistance;    // relative distance
   float yDistance;    // relative distance
   float yawrate;      // deg/s
   float zDistance;    // m in the world frame of reference
 } __attribute__((packed));
 
-void crtpCommanderPosHoldDecodeSetpoint(setpoint_t *setpoint, CRTPPacket *pk) {
+void crtpCommanderPositionDecodeSetpoint(setpoint_t *setpoint, CRTPPacket *pk) {
   memset(setpoint, 0, sizeof(setpoint_t));
-  struct posHoldPackets *values = (struct posHoldPackets *)(((char*)pk->data) + 1);
-  ASSERT(pk->size - 1 == sizeof(struct posHoldPackets));
+  struct positionPackets *values = (struct positionPackets *)(((char*)pk->data) + 1);
+  ASSERT(pk->size - 1 == sizeof(struct positionPackets));
   // set absolute height
   setpoint->mode.z = modeAbs;
   setpoint->position.z = values->zDistance;

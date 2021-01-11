@@ -51,8 +51,7 @@ static int usblinkSetEnable(bool enable);
 static int usblinkReceiveCRTPPacket(CRTPPacket *p);
 
 
-static struct crtpLinkOperations usblinkOp =
-{
+static struct crtpLinkOperations usblinkOp = {
   .setEnable         = usblinkSetEnable,
   .sendPacket        = usblinkSendPacket,
   .receivePacket     = usblinkReceiveCRTPPacket,
@@ -64,10 +63,8 @@ static struct crtpLinkOperations usblinkOp =
  */
 static USBPacket usbIn;
 static CRTPPacket p;
-static void usblinkTask(void *param)
-{
-  while(1)
-  {
+static void usblinkTask(void *param) {
+  while (1) {
     // Fetch a USB packet off the queue
     usbGetDataBlocking(&usbIn);
     p.size = usbIn.size - 1;
@@ -78,10 +75,8 @@ static void usblinkTask(void *param)
 
 }
 
-static int usblinkReceiveCRTPPacket(CRTPPacket *p)
-{
-  if (xQueueReceive(crtpPacketDelivery, p, M2T(100)) == pdTRUE)
-  {
+static int usblinkReceiveCRTPPacket(CRTPPacket *p) {
+  if (xQueueReceive(crtpPacketDelivery, p, M2T(100)) == pdTRUE) {
     ledseqRun(LINK_LED, seq_linkup);
     return 0;
   }
@@ -89,16 +84,14 @@ static int usblinkReceiveCRTPPacket(CRTPPacket *p)
   return -1;
 }
 
-static int usblinkSendPacket(CRTPPacket *p)
-{
+static int usblinkSendPacket(CRTPPacket *p) {
   int dataSize;
 
   ASSERT(p->size < SYSLINK_MTU);
 
   sendBuffer[0] = p->header;
 
-  if (p->size <= CRTP_MAX_DATA_SIZE)
-  {
+  if (p->size <= CRTP_MAX_DATA_SIZE) {
     memcpy(&sendBuffer[1], p->data, p->size);
   }
   dataSize = p->size + 1;
@@ -109,8 +102,7 @@ static int usblinkSendPacket(CRTPPacket *p)
   return usbSendData(dataSize, sendBuffer);
 }
 
-static int usblinkSetEnable(bool enable)
-{
+static int usblinkSetEnable(bool enable) {
   return 0;
 }
 
@@ -118,30 +110,26 @@ static int usblinkSetEnable(bool enable)
  * Public functions
  */
 
-void usblinkInit()
-{
-  if(isInit)
+void usblinkInit() {
+  if (isInit)
     return;
 
   // Initialize the USB peripheral
   usbInit();
-
+  
   crtpPacketDelivery = xQueueCreate(16, sizeof(CRTPPacket));
   DEBUG_QUEUE_MONITOR_REGISTER(crtpPacketDelivery);
 
-  xTaskCreate(usblinkTask, USBLINK_TASK_NAME,
-              USBLINK_TASK_STACKSIZE, NULL, USBLINK_TASK_PRI, NULL);
+  xTaskCreate(usblinkTask, USBLINK_TASK_NAME, USBLINK_TASK_STACKSIZE, NULL, USBLINK_TASK_PRI, NULL);
 
   isInit = true;
 }
 
-bool usblinkTest()
-{
+bool usblinkTest() {
   return isInit;
 }
 
-struct crtpLinkOperations * usblinkGetLink()
-{
+struct crtpLinkOperations * usblinkGetLink() {
   return &usblinkOp;
 }
 

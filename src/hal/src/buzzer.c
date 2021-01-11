@@ -29,28 +29,23 @@
 
 static struct buzzerControl * ctrl;
 
-void buzzerInit()
-{
+void buzzerInit() {
 }
 
-bool buzzerTest()
-{
+bool buzzerTest() {
   return true;
 }
 
-void buzzerOff()
-{
+void buzzerOff() {
   if (ctrl)
     ctrl->off();
 }
 
-void buzzerOn(uint32_t freq)
-{
+void buzzerOn(uint32_t freq) {
   if (ctrl)
     ctrl->on(freq);
 }
 
-void buzzerSetControl(struct buzzerControl * bc)
-{
+void buzzerSetControl(struct buzzerControl * bc) {
   ctrl = bc;
 }

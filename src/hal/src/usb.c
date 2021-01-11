@@ -48,7 +48,7 @@
 #include "crtp.h"
 
 
-__ALIGN_BEGIN USB_OTG_CORE_HANDLE    USB_OTG_dev __ALIGN_END ;
+__ALIGN_BEGIN USB_OTG_CORE_HANDLE USB_OTG_dev __ALIGN_END;
 
 static bool isInit = false;
 static bool doingTransfer = false;
@@ -114,8 +114,7 @@ static USBPacket inPacket;
 static USBPacket outPacket;
 
 /* CDC interface class callbacks structure */
-USBD_Class_cb_TypeDef cf_usb_cb =
-{
+USBD_Class_cb_TypeDef cf_usb_cb = {
   usbd_cf_Init,
   usbd_cf_DeInit,
   usbd_cf_Setup,
@@ -129,8 +128,7 @@ USBD_Class_cb_TypeDef cf_usb_cb =
   usbd_cf_GetCfgDesc,
 };
 
-USBD_Usr_cb_TypeDef USR_cb =
-{
+USBD_Usr_cb_TypeDef USR_cb = {
   USBD_USR_Init,
   USBD_USR_DeviceReset,
   USBD_USR_DeviceConfigured,
@@ -149,15 +147,13 @@ static void resetUSB(void) {
 
   if (isInit == true) {
     // Empty queue
-    while (xQueueReceiveFromISR(usbDataTx, &outPacket, &xTaskWokenByReceive) == pdTRUE)
-      ;
+    while (xQueueReceiveFromISR(usbDataTx, &outPacket, &xTaskWokenByReceive) == pdTRUE);
   }
   
   USB_OTG_FlushTxFifo(&USB_OTG_dev, IN_EP);
 }
 
-static uint8_t usbd_cf_Setup(void *pdev , USB_SETUP_REQ  *req)
-{
+static uint8_t usbd_cf_Setup(void *pdev, USB_SETUP_REQ *req) {
   command = req->wIndex;
   if (command == 0x01) {
     crtpSetLink(usblinkGetLink());
@@ -168,44 +164,38 @@ static uint8_t usbd_cf_Setup(void *pdev , USB_SETUP_REQ  *req)
   return USBD_OK;
 }
 
-static uint8_t  usbd_cf_Init (void  *pdev,
-                               uint8_t cfgidx)
-{
+/**
+  * @brief  usbd_cf_Init
+  *         Initialize the CDC layer
+  * @param  pdev: device instance
+  * @param  cfgidx: Configuration index
+  * @retval status
+  */
+static uint8_t  usbd_cf_Init (void  *pdev, uint8_t cfgidx) {
   /* Open EP IN */
-  DCD_EP_Open(pdev,
-              IN_EP,
-              USB_RX_TX_PACKET_SIZE,
-              USB_OTG_EP_BULK);
+  DCD_EP_Open(pdev, IN_EP, USB_RX_TX_PACKET_SIZE, USB_OTG_EP_BULK);
 
   /* Open EP OUT */
-  DCD_EP_Open(pdev,
-              OUT_EP,
-              USB_RX_TX_PACKET_SIZE,
-              USB_OTG_EP_BULK);
+  DCD_EP_Open(pdev, OUT_EP, USB_RX_TX_PACKET_SIZE, USB_OTG_EP_BULK);
 
   /* Prepare Out endpoint to receive next packet */
-  DCD_EP_PrepareRx(pdev,
-                   OUT_EP,
-                   (uint8_t*)(inPacket.data),
-                   USB_RX_TX_PACKET_SIZE);
+  DCD_EP_PrepareRx(pdev, OUT_EP, (uint8_t*)(inPacket.data), USB_RX_TX_PACKET_SIZE);
 
   return USBD_OK;
 }
 
 /**
-  * @brief  usbd_cdc_Init
+  * @brief  usbd_cf_DeInit
   *         DeInitialize the CDC layer
   * @param  pdev: device instance
   * @param  cfgidx: Configuration index
   * @retval status
   */
-static uint8_t  usbd_cf_DeInit (void  *pdev,
-                                 uint8_t cfgidx)
-{
-  /* Open EP IN */
+static uint8_t  usbd_cf_DeInit (void  *pdev, uint8_t cfgidx) {
+  /* Close EP IN */
   DCD_EP_Close(pdev, IN_EP);
 
-  /* Open EP OUT */
+  /* Close EP OUT */
   DCD_EP_Close(pdev, OUT_EP);
 
   return USBD_OK;
@@ -218,19 +208,14 @@ static uint8_t  usbd_cf_DeInit (void  *pdev,
   * @param  epnum: endpoint number
   * @retval status
   */
-static uint8_t  usbd_cf_DataIn (void *pdev, uint8_t epnum)
-{
+static uint8_t  usbd_cf_DataIn (void *pdev, uint8_t epnum) {
   portBASE_TYPE xTaskWokenByReceive = pdFALSE;
 
   doingTransfer = false;
 
-  if (xQueueReceiveFromISR(usbDataTx, &outPacket, &xTaskWokenByReceive) == pdTRUE)
-  {
+  if (xQueueReceiveFromISR(usbDataTx, &outPacket, &xTaskWokenByReceive) == pdTRUE) {
     doingTransfer = true;
-    DCD_EP_Tx (pdev,
-              IN_EP,
-              (uint8_t*)outPacket.data,
-              outPacket.size);
+    DCD_EP_Tx (pdev, IN_EP, (uint8_t*)outPacket.data, outPacket.size);
   }
 
   portYIELD_FROM_ISR(xTaskWokenByReceive);
@@ -238,18 +223,13 @@ static uint8_t  usbd_cf_DataIn (void *pdev, uint8_t epnum)
   return USBD_OK;
 }
 
-static uint8_t  usbd_cf_SOF (void *pdev)
-{
+static uint8_t  usbd_cf_SOF (void *pdev) {
   portBASE_TYPE xTaskWokenByReceive = pdFALSE;
 
   if (!doingTransfer) {
-    if (xQueueReceiveFromISR(usbDataTx, &outPacket, &xTaskWokenByReceive) == pdTRUE)
-    {
+    if (xQueueReceiveFromISR(usbDataTx, &outPacket, &xTaskWokenByReceive) == pdTRUE) {
       doingTransfer = true;
-      DCD_EP_Tx (pdev,
-                IN_EP,
-                (uint8_t*)outPacket.data,
-                outPacket.size);
+      DCD_EP_Tx (pdev, IN_EP, (uint8_t*)outPacket.data, outPacket.size);
     }
   }
 
@@ -265,8 +245,7 @@ static uint8_t  usbd_cf_SOF (void *pdev)
   * @param  epnum: endpoint number
   * @retval status
   */
-static uint8_t  usbd_cf_DataOut (void *pdev, uint8_t epnum)
-{
+static uint8_t  usbd_cf_DataOut (void *pdev, uint8_t epnum) {
   portBASE_TYPE xHigherPriorityTaskWoken = pdFALSE;
 
   /* Get the received data buffer and update the counter */
@@ -275,10 +254,7 @@ static uint8_t  usbd_cf_DataOut (void *pdev, uint8_t epnum)
   xQueueSendFromISR(usbDataRx, &inPacket, &xHigherPriorityTaskWoken);
 
   /* Prepare Out endpoint to receive next packet */
-  DCD_EP_PrepareRx(pdev,
-                   OUT_EP,
-                   (uint8_t*)(inPacket.data),
-                   USB_RX_TX_PACKET_SIZE);
+  DCD_EP_PrepareRx(pdev, OUT_EP, (uint8_t*)(inPacket.data), USB_RX_TX_PACKET_SIZE);
 
   return USBD_OK;
 }
@@ -290,9 +266,8 @@ static uint8_t  usbd_cf_DataOut (void *pdev, uint8_t epnum)
   * @param  length : pointer data length
   * @retval pointer to descriptor buffer
   */
-static uint8_t  *usbd_cf_GetCfgDesc (uint8_t speed, uint16_t *length)
-{
-  *length = sizeof (usbd_cf_CfgDesc);
+static uint8_t  *usbd_cf_GetCfgDesc (uint8_t speed, uint16_t *length) {
+  *length = sizeof(usbd_cf_CfgDesc);
   return usbd_cf_CfgDesc;
 }
 
@@ -302,8 +277,7 @@ static uint8_t  *usbd_cf_GetCfgDesc (uint8_t speed, uint16_t *length)
 * @param  None
 * @retval None
 */
-void USBD_USR_Init(void)
-{
+void USBD_USR_Init(void) {
 }
 
 /**
@@ -311,8 +285,7 @@ void USBD_USR_Init(void)
 * @param  speed : device speed
 * @retval None
 */
-void USBD_USR_DeviceReset(uint8_t speed)
-{
+void USBD_USR_DeviceReset(uint8_t speed) {
   resetUSB();
 }
 
@@ -322,8 +295,7 @@ void USBD_USR_DeviceReset(uint8_t speed)
 * @param  None
 * @retval Staus
 */
-void USBD_USR_DeviceConfigured(void)
-{
+void USBD_USR_DeviceConfigured(void) {
 }
 
 /**
@@ -331,8 +303,7 @@ void USBD_USR_DeviceConfigured(void)
 * @param  None
 * @retval None
 */
-void USBD_USR_DeviceSuspended(void)
-{
+void USBD_USR_DeviceSuspended(void) {
   /* USB communication suspended (probably USB unplugged). Switch back to radiolink */
   resetUSB();
 }
@@ -343,8 +314,7 @@ void USBD_USR_DeviceSuspended(void)
 * @param  None
 * @retval None
 */
-void USBD_USR_DeviceResumed(void)
-{
+void USBD_USR_DeviceResumed(void) {
 }
 
 
@@ -353,8 +323,7 @@ void USBD_USR_DeviceResumed(void)
 * @param  None
 * @retval Staus
 */
-void USBD_USR_DeviceConnected(void)
-{
+void USBD_USR_DeviceConnected(void) {
 }
 
 
@@ -363,19 +332,13 @@ void USBD_USR_DeviceConnected(void)
 * @param  None
 * @retval Staus
 */
-void USBD_USR_DeviceDisconnected(void)
-{
+void USBD_USR_DeviceDisconnected(void) {
   resetUSB();
 }
 
-void usbInit(void)
-{
-  USBD_Init(&USB_OTG_dev,
-            USB_OTG_FS_CORE_ID,
-            &USR_desc,
-            &cf_usb_cb,
-            &USR_cb);
-
+void usbInit(void) {
+  USBD_Init(&USB_OTG_dev, USB_OTG_FS_CORE_ID, &USR_desc, &cf_usb_cb, &USR_cb);
+  
   // This should probably be reduced to a CRTP packet size
   usbDataRx = xQueueCreate(5, sizeof(USBPacket)); /* Buffer USB packets (max 64 bytes) */
   DEBUG_QUEUE_MONITOR_REGISTER(usbDataRx);
@@ -385,13 +348,11 @@ void usbInit(void)
   isInit = true;
 }
 
-bool usbTest(void)
-{
+bool usbTest(void) {
   return isInit;
 }
 
-bool usbGetDataBlocking(USBPacket *in)
-{
+bool usbGetDataBlocking(USBPacket *in) {
   while (xQueueReceive(usbDataRx, in, portMAX_DELAY) != pdTRUE)
     ; // Don't return until we get some data on the USB
   return true;
@@ -399,8 +360,7 @@ bool usbGetDataBlocking(USBPacket *in)
 
 static USBPacket outStage;
 
-bool usbSendData(uint32_t size, uint8_t* data)
-{
+bool usbSendData(uint32_t size, uint8_t* data) {
   outStage.size = size;
   memcpy(outStage.data, data, size);
   // Dont' block when sending

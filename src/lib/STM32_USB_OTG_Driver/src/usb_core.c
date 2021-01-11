@@ -389,9 +389,9 @@ USB_OTG_STS USB_OTG_CoreInit(USB_OTG_CORE_HANDLE *pdev)
     gccfg.b.vbussensingA = 1 ;
     gccfg.b.vbussensingB = 1 ;     
 #ifndef VBUS_SENSING_ENABLED
-    gccfg.b.disablevbussensing = 1; 
-#endif    
-    
+    gccfg.b.disablevbussensing = 1;
+#endif
+
     if(pdev->cfg.Sof_output)
     {
       gccfg.b.sofouten = 1;  
