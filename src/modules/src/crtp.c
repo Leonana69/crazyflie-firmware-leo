@@ -52,17 +52,24 @@ static struct crtpLinkOperations nopLink = {
   .setEnable         = (void*) nopFunc,
   .sendPacket        = (void*) nopFunc,
   .receivePacket     = (void*) nopFunc,
-}; 
+};
 
 static struct crtpLinkOperations *link = &nopLink;
+static struct crtpLinkOperations *linkusb = &nopLink;
 
 #define STATS_INTERVAL 500
 static struct {
   uint32_t rxCount;
   uint32_t txCount;
 
+  uint32_t urxCount;
+  uint32_t utxCount;
+
   uint16_t rxRate;
   uint16_t txRate;
+
+  uint16_t urxRate;
+  uint16_t utxRate;
 
   uint32_t nextStatisticsTime;
   uint32_t previousStatisticsTime;
@@ -82,7 +89,7 @@ static volatile CrtpCallback callbacks[CRTP_NBR_OF_PORTS];
 static void updateStats();
 
 void crtpInit(void) {
-  if(isInit)
+  if (isInit)
     return;
 
   txQueue = xQueueCreate(CRTP_TX_QUEUE_SIZE, sizeof(CRTPPacket));
@@ -150,6 +157,17 @@ void crtpTxTask(void *param) {
         stats.txCount++;
         updateStats();
       }
+    } else if (linkusb != &nopLink && linkusb != link) {
+      if (xQueueReceive(txQueue, &p, portMAX_DELAY) == pdTRUE) {
+        // Keep testing, if the link changes to USB it will go though
+        while (linkusb->sendPacket(&p) == false) {
+          // Relaxation time
+          vTaskDelay(M2T(10));
+        }
+        stats.utxCount++;
+        updateStats();
+      }
+
     } else {
       vTaskDelay(M2T(10));
     }
@@ -177,56 +195,71 @@ void crtpRxTask(void *param) {
         stats.rxCount++;
         updateStats();
       }
+    } else if (linkusb != &nopLink && linkusb != link) {
+      if (!linkusb->receivePacket(&p)) {
+
+        if (queues[p.port]) {
+          if (xQueueSend(queues[p.port], &p, 0) == errQUEUE_FULL) {
+            // We should never drop packet
+            ASSERT(0);
+          }          
+        }
+
+        if (callbacks[p.port]) {
+          callbacks[p.port](&p);
+        }
+
+        stats.urxCount++;
+        updateStats();
+      }
     } else {
       vTaskDelay(M2T(10));
     }
   }
 }
 
-void crtpRegisterPortCB(int port, CrtpCallback cb)
-{
+void crtpRegisterPortCB(int port, CrtpCallback cb) {
   if (port > CRTP_NBR_OF_PORTS)
     return;
   
   callbacks[port] = cb;
 }
 
-int crtpSendPacket(CRTPPacket *p)
-{
+int crtpSendPacket(CRTPPacket *p) {
   ASSERT(p); 
   ASSERT(p->size <= CRTP_MAX_DATA_SIZE);
 
   return xQueueSend(txQueue, p, 0);
 }
 
-int crtpSendPacketBlock(CRTPPacket *p)
-{
+int crtpSendPacketBlock(CRTPPacket *p) {
   ASSERT(p); 
   ASSERT(p->size <= CRTP_MAX_DATA_SIZE);
 
   return xQueueSend(txQueue, p, portMAX_DELAY);
 }
 
-int crtpReset(void)
-{
+int crtpReset(void) {
   xQueueReset(txQueue);
   if (link->reset) {
     link->reset();
   }
 
+  if (linkusb->reset) {
+    linkusb->reset();
+  }
+
   return 0;
 }
 
-bool crtpIsConnected(void)
-{
+bool crtpIsConnected(void) {
   if (link->isConnected)
     return link->isConnected();
   return true;
 }
 
-void crtpSetLink(struct crtpLinkOperations * lk)
-{
-  if(link)
+void crtpSetLink(struct crtpLinkOperations * lk) {
+  if (link)
     link->setEnable(false);
 
   if (lk)
@@ -237,24 +270,38 @@ void crtpSetLink(struct crtpLinkOperations * lk)
   link->setEnable(true);
 }
 
-static int nopFunc(void)
-{
+void crtpSetUsbLink(struct crtpLinkOperations * lk) {
+  if (linkusb)
+    linkusb->setEnable(false);
+
+  if (lk)
+    linkusb = lk;
+  else
+    linkusb = &nopLink;
+
+  linkusb->setEnable(true);
+}
+
+static int nopFunc(void) {
   return ENETDOWN;
 }
 
-static void clearStats()
-{
+static void clearStats() {
   stats.rxCount = 0;
   stats.txCount = 0;
+  stats.urxCount = 0;
+  stats.utxCount = 0;
 }
 
-static void updateStats()
-{
+static void updateStats() {
   uint32_t now = xTaskGetTickCount();
   if (now > stats.nextStatisticsTime) {
     float interval = now - stats.previousStatisticsTime;
     stats.rxRate = (uint16_t)(1000.0f * stats.rxCount / interval);
     stats.txRate = (uint16_t)(1000.0f * stats.txCount / interval);
+
+    stats.urxRate = (uint16_t)(1000.0f * stats.urxCount / interval);
+    stats.utxRate = (uint16_t)(1000.0f * stats.utxCount / interval);
 
     clearStats();
     stats.previousStatisticsTime = now;
@@ -265,4 +312,6 @@ static void updateStats()
 LOG_GROUP_START(crtp)
 LOG_ADD(LOG_UINT16, rxRate, &stats.rxRate)
 LOG_ADD(LOG_UINT16, txRate, &stats.txRate)
+LOG_ADD(LOG_UINT16, urxRate, &stats.urxRate)
+LOG_ADD(LOG_UINT16, utxRate, &stats.utxRate)
 LOG_GROUP_STOP(tdoa)

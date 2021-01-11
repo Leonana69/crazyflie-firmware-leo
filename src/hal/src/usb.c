@@ -66,7 +66,7 @@ static xQueueHandle usbDataTx;
 #define INTERFACE_DESCRIPTOR        0x04
 #define ENDPOINT_DESCRIPTOR         0x05
 
-__ALIGN_BEGIN uint8_t  usbd_cf_CfgDesc[57] __ALIGN_END = {
+__ALIGN_BEGIN uint8_t usbd_cf_CfgDesc[57] __ALIGN_END = {
   /***** Configuration descriptor ******/
   9,                         //bLength
   CONFIGURATION_DESCRIPTOR,  //bDescriptorType
@@ -102,13 +102,13 @@ __ALIGN_BEGIN uint8_t  usbd_cf_CfgDesc[57] __ALIGN_END = {
   6,                         //bInterval (irrelevant for bulk endpoint)
 };
 
-static uint8_t  usbd_cf_Init        (void  *pdev, uint8_t cfgidx);
-static uint8_t  usbd_cf_DeInit      (void  *pdev, uint8_t cfgidx);
-static uint8_t  usbd_cf_DataIn      (void *pdev, uint8_t epnum);
-static uint8_t  usbd_cf_DataOut     (void *pdev, uint8_t epnum);
-static uint8_t  *usbd_cf_GetCfgDesc (uint8_t speed, uint16_t *length);
-static uint8_t  usbd_cf_SOF         (void *pdev);
-static uint8_t usbd_cf_Setup        (void *pdev , USB_SETUP_REQ  *req);
+static uint8_t usbd_cf_Init        (void  *pdev, uint8_t cfgidx);
+static uint8_t usbd_cf_DeInit      (void  *pdev, uint8_t cfgidx);
+static uint8_t usbd_cf_DataIn      (void *pdev, uint8_t epnum);
+static uint8_t usbd_cf_DataOut     (void *pdev, uint8_t epnum);
+static uint8_t *usbd_cf_GetCfgDesc (uint8_t speed, uint16_t *length);
+static uint8_t usbd_cf_SOF         (void *pdev);
+static uint8_t usbd_cf_Setup       (void *pdev , USB_SETUP_REQ  *req);
 
 static USBPacket inPacket;
 static USBPacket outPacket;

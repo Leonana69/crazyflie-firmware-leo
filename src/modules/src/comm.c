@@ -56,6 +56,7 @@ void commInit(void) {
   // consoleInit();
 
   crtpSetLink(radiolinkGetLink());
+  crtpSetUsbLink(usblinkGetLink());
 
   crtpserviceInit();
   platformserviceInit();

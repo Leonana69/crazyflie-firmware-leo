@@ -44,7 +44,7 @@ static void commanderCrtpDebug(CRTPPacket* pk);
 static void commanderSetText(CRTPPacket* pk);
 
 void crtpCommanderInit(void) {
-  if(isInit) {
+  if (isInit) {
     return;
   }
 

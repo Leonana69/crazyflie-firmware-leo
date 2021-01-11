@@ -34,7 +34,7 @@
 
 #define CRTP_HEADER(port, channel) (((port & 0x0F) << 4) | (channel & 0x0F))
 
-#define CRTP_IS_NULL_PACKET(P) ((P.header&0xF3)==0xF3)
+#define CRTP_IS_NULL_PACKET(P) ((P.header & 0xF3) == 0xF3)
 
 typedef enum {
   CRTP_PORT_CONSOLE          = 0x00,
@@ -172,7 +172,7 @@ struct crtpLinkOperations
 };
 
 void crtpSetLink(struct crtpLinkOperations * lk);
-
+void crtpSetUsbLink(struct crtpLinkOperations * lk);
 /**
  * Check if the connection timeout has been reached, otherwise
  * we will assume that we are connected.
