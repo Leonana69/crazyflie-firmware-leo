@@ -157,7 +157,11 @@ void crtpTxTask(void *param) {
         stats.txCount++;
         updateStats();
       }
-    } else if (linkusb != &nopLink && linkusb != link) {
+    } else {
+      vTaskDelay(M2T(5));
+    }
+
+    if (linkusb != &nopLink && linkusb != link) {
       if (xQueueReceive(txQueue, &p, portMAX_DELAY) == pdTRUE) {
         // Keep testing, if the link changes to USB it will go though
         while (linkusb->sendPacket(&p) == false) {
@@ -169,7 +173,7 @@ void crtpTxTask(void *param) {
       }
 
     } else {
-      vTaskDelay(M2T(10));
+      vTaskDelay(M2T(5));
     }
   }
 }
@@ -195,7 +199,11 @@ void crtpRxTask(void *param) {
         stats.rxCount++;
         updateStats();
       }
-    } else if (linkusb != &nopLink && linkusb != link) {
+    } else {
+      vTaskDelay(M2T(5));
+    }
+
+    if (linkusb != &nopLink && linkusb != link) {
       if (!linkusb->receivePacket(&p)) {
 
         if (queues[p.port]) {
@@ -213,7 +221,7 @@ void crtpRxTask(void *param) {
         updateStats();
       }
     } else {
-      vTaskDelay(M2T(10));
+      vTaskDelay(M2T(5));
     }
   }
 }
