@@ -158,23 +158,23 @@ void crtpTxTask(void *param) {
         updateStats();
       }
     } else {
-      vTaskDelay(M2T(5));
+      vTaskDelay(M2T(10));
     }
 
-    if (linkusb != &nopLink && linkusb != link) {
-      if (xQueueReceive(txQueue, &p, portMAX_DELAY) == pdTRUE) {
-        // Keep testing, if the link changes to USB it will go though
-        while (linkusb->sendPacket(&p) == false) {
-          // Relaxation time
-          vTaskDelay(M2T(10));
-        }
-        stats.utxCount++;
-        updateStats();
-      }
+    // if (linkusb != &nopLink && linkusb != link) {
+    //   if (xQueueReceive(txQueue, &p, 0) == pdTRUE) {
+    //     // Keep testing, if the link changes to USB it will go though
+    //     while (linkusb->sendPacket(&p) == false) {
+    //       // Relaxation time
+    //       vTaskDelay(M2T(10));
+    //     }
+    //     stats.utxCount++;
+    //     updateStats();
+    //   }
 
-    } else {
-      vTaskDelay(M2T(5));
-    }
+    // } else {
+    //   vTaskDelay(M2T(5));
+    // }
   }
 }
 
@@ -184,7 +184,6 @@ void crtpRxTask(void *param) {
   while (true) {
     if (link != &nopLink) {
       if (!link->receivePacket(&p)) {
-
         if (queues[p.port]) {
           if (xQueueSend(queues[p.port], &p, 0) == errQUEUE_FULL) {
             // We should never drop packet
@@ -205,7 +204,6 @@ void crtpRxTask(void *param) {
 
     if (linkusb != &nopLink && linkusb != link) {
       if (!linkusb->receivePacket(&p)) {
-
         if (queues[p.port]) {
           if (xQueueSend(queues[p.port], &p, 0) == errQUEUE_FULL) {
             // We should never drop packet
