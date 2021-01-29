@@ -188,7 +188,7 @@ void crtpRxTask(void *param) {
           if (xQueueSend(queues[p.port], &p, 0) == errQUEUE_FULL) {
             // We should never drop packet
             ASSERT(0);
-          }          
+          }
         }
 
         if (callbacks[p.port]) {
@@ -202,25 +202,25 @@ void crtpRxTask(void *param) {
       vTaskDelay(M2T(5));
     }
 
-    if (linkusb != &nopLink && linkusb != link) {
-      if (!linkusb->receivePacket(&p)) {
-        if (queues[p.port]) {
-          if (xQueueSend(queues[p.port], &p, 0) == errQUEUE_FULL) {
-            // We should never drop packet
-            ASSERT(0);
-          }          
-        }
+    // if (linkusb != &nopLink && linkusb != link) {
+    //   if (!linkusb->receivePacket(&p)) {
+    //     if (queues[p.port]) {
+    //       if (xQueueSend(queues[p.port], &p, 0) == errQUEUE_FULL) {
+    //         // We should never drop packet
+    //         ASSERT(0);
+    //       }
+    //     }
 
-        if (callbacks[p.port]) {
-          callbacks[p.port](&p);
-        }
+    //     if (callbacks[p.port]) {
+    //       callbacks[p.port](&p);
+    //     }
 
-        stats.urxCount++;
-        updateStats();
-      }
-    } else {
-      vTaskDelay(M2T(5));
-    }
+    //     stats.urxCount++;
+    //     updateStats();
+    //   }
+    // } else {
+    //   vTaskDelay(M2T(5));
+    // }
   }
 }
 
