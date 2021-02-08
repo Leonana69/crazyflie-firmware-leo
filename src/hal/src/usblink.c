@@ -77,7 +77,7 @@ static void usblinkTask(void *param) {
 
 static int usblinkReceiveCRTPPacket(CRTPPacket *p) {
   // M2T(100)
-  if (xQueueReceive(crtpPacketDelivery, p, 0) == pdTRUE) {
+  if (xQueueReceive(crtpPacketDelivery, p, M2T(20)) == pdTRUE) {
     ledseqRun(LINK_LED, seq_linkup);
     return 0;
   }

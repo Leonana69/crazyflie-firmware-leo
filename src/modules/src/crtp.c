@@ -55,27 +55,24 @@ static struct crtpLinkOperations nopLink = {
 };
 
 static struct crtpLinkOperations *link = &nopLink;
-static struct crtpLinkOperations *linkusb = &nopLink;
+
+// usb link
+static struct crtpLinkOperations *usblink = &nopLink;
+static void crtpUsbRxTask(void *param);
 
 #define STATS_INTERVAL 500
 static struct {
   uint32_t rxCount;
   uint32_t txCount;
 
-  uint32_t urxCount;
-  uint32_t utxCount;
-
   uint16_t rxRate;
   uint16_t txRate;
-
-  uint16_t urxRate;
-  uint16_t utxRate;
 
   uint32_t nextStatisticsTime;
   uint32_t previousStatisticsTime;
 } stats;
 
-static xQueueHandle  txQueue;
+static xQueueHandle txQueue;
 
 #define CRTP_NBR_OF_PORTS 16
 #define CRTP_TX_QUEUE_SIZE 100
@@ -100,8 +97,12 @@ void crtpInit(void) {
   xTaskCreate(crtpRxTask, CRTP_RX_TASK_NAME,
               CRTP_RX_TASK_STACKSIZE, NULL, CRTP_RX_TASK_PRI, NULL);
 
-  /* Start Rx/Tx tasks */
+  // usb task
+  
+  xTaskCreate(crtpUsbRxTask, CRTP_USB_RX_TASK_NAME,
+              CRTP_RX_TASK_STACKSIZE, NULL, CRTP_RX_TASK_PRI, NULL);
 
+  /* Start Rx/Tx tasks */
 
   isInit = true;
 }
@@ -160,21 +161,6 @@ void crtpTxTask(void *param) {
     } else {
       vTaskDelay(M2T(10));
     }
-
-    // if (linkusb != &nopLink && linkusb != link) {
-    //   if (xQueueReceive(txQueue, &p, 0) == pdTRUE) {
-    //     // Keep testing, if the link changes to USB it will go though
-    //     while (linkusb->sendPacket(&p) == false) {
-    //       // Relaxation time
-    //       vTaskDelay(M2T(10));
-    //     }
-    //     stats.utxCount++;
-    //     updateStats();
-    //   }
-
-    // } else {
-    //   vTaskDelay(M2T(5));
-    // }
   }
 }
 
@@ -199,28 +185,43 @@ void crtpRxTask(void *param) {
         updateStats();
       }
     } else {
-      vTaskDelay(M2T(5));
+      vTaskDelay(M2T(10));
+    }
+  }
+}
+
+// usb rx function
+void crtpUsbRxTask(void *param) {
+  CRTPPacket p;
+  static int cnt = 0;
+
+  while (true) {
+
+    if (cnt++ == 50) {
+      cnt = 0;
+      DEBUG_PRINT("USB RX\n");
     }
 
-    // if (linkusb != &nopLink && linkusb != link) {
-    //   if (!linkusb->receivePacket(&p)) {
-    //     if (queues[p.port]) {
-    //       if (xQueueSend(queues[p.port], &p, 0) == errQUEUE_FULL) {
-    //         // We should never drop packet
-    //         ASSERT(0);
-    //       }
-    //     }
+    if (usblink != &nopLink) {
+      if (!usblink->receivePacket(&p)) {
+        if (queues[p.port]) {
+          if (xQueueSend(queues[p.port], &p, 0) == errQUEUE_FULL) {
+            // We should never drop packet
+            ASSERT(0);
+          }
+        }
 
-    //     if (callbacks[p.port]) {
-    //       callbacks[p.port](&p);
-    //     }
+        if (callbacks[p.port]) {
+          callbacks[p.port](&p);
+        }
 
-    //     stats.urxCount++;
-    //     updateStats();
-    //   }
-    // } else {
-    //   vTaskDelay(M2T(5));
-    // }
+        // stats.urxCount++;
+        // updateStats();
+      }
+    } else {
+      // runs at 50Hz
+      vTaskDelay(M2T(20));
+    }
   }
 }
 
@@ -251,8 +252,8 @@ int crtpReset(void) {
     link->reset();
   }
 
-  if (linkusb->reset) {
-    linkusb->reset();
+  if (usblink->reset) {
+    usblink->reset();
   }
 
   return 0;
@@ -277,15 +278,15 @@ void crtpSetLink(struct crtpLinkOperations * lk) {
 }
 
 void crtpSetUsbLink(struct crtpLinkOperations * lk) {
-  if (linkusb)
-    linkusb->setEnable(false);
+  if (usblink)
+    usblink->setEnable(false);
 
   if (lk)
-    linkusb = lk;
+    usblink = lk;
   else
-    linkusb = &nopLink;
+    usblink = &nopLink;
 
-  linkusb->setEnable(true);
+  usblink->setEnable(true);
 }
 
 static int nopFunc(void) {
@@ -295,8 +296,6 @@ static int nopFunc(void) {
 static void clearStats() {
   stats.rxCount = 0;
   stats.txCount = 0;
-  stats.urxCount = 0;
-  stats.utxCount = 0;
 }
 
 static void updateStats() {
@@ -305,9 +304,6 @@ static void updateStats() {
     float interval = now - stats.previousStatisticsTime;
     stats.rxRate = (uint16_t)(1000.0f * stats.rxCount / interval);
     stats.txRate = (uint16_t)(1000.0f * stats.txCount / interval);
-
-    stats.urxRate = (uint16_t)(1000.0f * stats.urxCount / interval);
-    stats.utxRate = (uint16_t)(1000.0f * stats.utxCount / interval);
 
     clearStats();
     stats.previousStatisticsTime = now;
@@ -318,6 +314,4 @@ static void updateStats() {
 LOG_GROUP_START(crtp)
 LOG_ADD(LOG_UINT16, rxRate, &stats.rxRate)
 LOG_ADD(LOG_UINT16, txRate, &stats.txRate)
-LOG_ADD(LOG_UINT16, urxRate, &stats.urxRate)
-LOG_ADD(LOG_UINT16, utxRate, &stats.utxRate)
 LOG_GROUP_STOP(tdoa)
