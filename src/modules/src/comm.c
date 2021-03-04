@@ -74,8 +74,7 @@ void commInit(void) {
   isInit = true;
 }
 
-bool commTest(void)
-{
+bool commTest(void) {
   bool pass=isInit;
   
   pass &= radiolinkTest();

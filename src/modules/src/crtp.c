@@ -193,15 +193,8 @@ void crtpRxTask(void *param) {
 // usb rx function
 void crtpUsbRxTask(void *param) {
   CRTPPacket p;
-  static int cnt = 0;
 
   while (true) {
-
-    if (cnt++ == 50) {
-      cnt = 0;
-      DEBUG_PRINT("USB RX\n");
-    }
-
     if (usblink != &nopLink) {
       if (!usblink->receivePacket(&p)) {
         if (queues[p.port]) {

@@ -142,11 +142,11 @@ void posHoldController(float* thrust, attitude_t *attitude, setpoint_t *setpoint
 
 
   // leonana: debug the height
-  // static int cnt = 0;
-  // if (cnt++ % 5 == 0) {
-  //   int tmp = 100 * state->position.x;
-  //   DEBUG_PRINT("%c%c\n", (tmp / 10) + 48, (tmp % 10) + 48);
-  // }
+  static int cnt = 0;
+  if (cnt++ % 5 == 0) {
+    int tmp = 100 * state->position.x;
+    DEBUG_PRINT("%c%c\n", (tmp / 10) + 48, (tmp % 10) + 48);
+  }
   
 
   // X, Y
